@@ -70,3 +70,7 @@ PDF 翻译 Skill 还提供了位于 `gartner-pdf-zh-translation/scripts/` 中的
 ## 许可证与第三方权利
 
 再分发前请审查 Gartner 条款以及源材料的许可证。本仓库提供工作流说明和工具，不授予再分发 Gartner 报告或其他第三方内容的权利。
+
+## 可调整 HC 双曲线对比
+
+调用示例：“使用 `$gartner-analysis` 比较这两份 HC，生成可调整的双曲线 HTML（`presentation_format=hc-editor`）。”Agent 先核对报告与技术映射、生成 SVG，再通过 `gartner-structured-presentation/scripts/build_hc_editor.py` 打包 HTML。浏览器中可拖动、编辑标签，保存／载入布局 JSON，导出调整后的 SVG／PNG。需要发布时指定飞书文档或画板，Agent 使用 `lark-cli` 写入 SVG 并回读预览。详见[完整流程与命令](gartner-structured-presentation/references/hc-comparison-editor.md)。

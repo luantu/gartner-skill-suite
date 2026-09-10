@@ -11,6 +11,7 @@
 | 单份 MQ 解读 | `single-mq` | `gartner-magic-quadrant-analysis` |
 | 同一 MQ 多年度比较 | `annual-mq` | `gartner-magic-quadrant-analysis` |
 | HC 与 MQ 交叉洞察 | `cross-insight` | `gartner-hc-mq-insight` |
+| 可调整 HC 双曲线 HTML／画板 | `presentation` + `presentation_format=hc-editor` | `gartner-structured-presentation` |
 | 章节和表格呈现 | `presentation` | `gartner-structured-presentation` |
 
 一次请求选择一个主模式。完整研究套件可以串联多个模式，但每个阶段仍分别验收。
@@ -30,6 +31,7 @@ target_vendor: null
 domain_profile: null
 external_evidence: false
 feishu_output: false
+presentation_format: chapters | hc-editor  # 仅 presentation；默认 chapters
 evidence_status: complete | partial | blocked
 ```
 
@@ -42,6 +44,8 @@ evidence_status: complete | partial | blocked
 - `presentation` 输入：已验证的分析或交叉洞察；只改变呈现结构，不改写证据和结论。
 
 `evidence_status=blocked` 时停止生成依赖该证据的结论；`partial` 时明确标出缺口和不可比范围。
+
+`presentation_format=hc-editor` 要求已核对的两份 HC 数据和年度映射；输出可调整 HTML、布局 JSON、SVG 和 QA。源输入只有 PDF 时先完成提炼／年度分析。画板目标来自用户当前指定并 fetch 确认，发布可选；详细流程见 [HC 双曲线编辑器](../../gartner-structured-presentation/references/hc-comparison-editor.md)。
 
 ## 资源归属
 

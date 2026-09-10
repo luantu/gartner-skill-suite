@@ -16,6 +16,7 @@ description: Use when a Gartner request spans PDF extraction, Chinese PDF transl
 | 解读单份 Magic Quadrant（MQ） | `gartner-magic-quadrant-analysis`，`mode=single-mq` |
 | 比较同一市场多个 MQ 年度版本 | `gartner-magic-quadrant-analysis`，`mode=annual-mq` |
 | 结合已完成的 HC 与 MQ 做交叉洞察 | `gartner-hc-mq-insight`，`mode=cross-insight` |
+| 将两份 HC 生成可调整双曲线 HTML 或飞书画板 | `gartner-structured-presentation`，`mode=presentation`，`presentation_format=hc-editor`（先完成 `annual-hc`） |
 | 把已完成结果编排成章节、表格或飞书呈现稿 | `gartner-structured-presentation`，`mode=presentation` |
 
 `gartner-annual-comparison` 是兼容入口：只有用户显式点名它时才使用，并立即转到 HC 的 `annual-hc` 模式，不再维护第二套分析流程。

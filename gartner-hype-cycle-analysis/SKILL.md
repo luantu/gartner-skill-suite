@@ -16,6 +16,8 @@ description: Use when interpreting a single Gartner Hype Cycle or comparing two 
 
 MQ、HC×MQ 交叉推理和章节呈现分别转交对应 Skill。需要完整研究套件时由总路由编排，不在本 Skill 内自动扩展范围。
 
+用户要求双曲线对比或可调整 HTML 时，完成两年度技术映射、字段核对与证据标注后，交给 `gartner-structured-presentation` 的 `presentation_format=hc-editor`，遵循[双曲线编辑器流程](../gartner-structured-presentation/references/hc-comparison-editor.md)。交付可调整 HTML；用户明确要求时再将调整后 SVG 写入飞书画板。
+
 按需读取：
 
 - [HC/MQ 分析协议](../gartner-analysis/references/analysis-hc-mq-protocol.md)

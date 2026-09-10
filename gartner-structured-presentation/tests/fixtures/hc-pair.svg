@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600">
+<rect width="1200" height="600" fill="white"/>
+<g id="axes_1">
+<text class="aux-label" data-name="title" x="50" y="35" font-size="22">Synthetic HC comparison — stage schematic, not source scores</text>
+<g id="curve-before" data-hc-year="2024"><path d="M 80 470 Q 240 80 360 180 T 650 400 T 1080 300" fill="none" stroke="#98a2b3" stroke-width="3" stroke-dasharray="8 6"/></g>
+<g id="curve-after" data-hc-year="2025"><path d="M 80 460 Q 240 70 360 170 T 650 390 T 1080 290" fill="none" stroke="#2176c7" stroke-width="3"/></g>
+<path d="M 310 180 L 360 170" stroke="#667085" fill="none"/>
+<path d="M 353 166 L 360 170 L 355 176" stroke="#667085" fill="none"/>
+<circle cx="310" cy="180" r="6" fill="#98a2b3"/>
+<circle cx="360" cy="170" r="6" fill="#2176c7"/>
+<path class="dynamic-leader" data-for="a:2024" d="M 310 180 L 130 200" fill="none" stroke="#98a2b3"/>
+<text class="tech-label" data-name="a:2024" data-point-x="310" data-point-y="180" x="130" y="200" font-size="15">Example A (2024)</text>
+<path class="dynamic-leader" data-for="a:2025" d="M 360 170 L 390 150" fill="none" stroke="#98a2b3"/>
+<text class="tech-label" data-name="a:2025" data-point-x="360" data-point-y="170" x="390" y="150" font-size="15">Example A (2025)</text>
+<circle cx="650" cy="390" r="6" fill="#2176c7"/>
+<path class="dynamic-leader" data-for="b:2025" d="M 650 390 L 690 430" fill="none" stroke="#98a2b3"/>
+<text class="tech-label" data-name="b:2025" data-point-x="650" data-point-y="390" x="690" y="430" font-size="15">Example B — added</text>
+<g id="legend-before" data-geometry-editable="true" data-editor-role="legend-symbol"><path d="M 840 70 L 880 70" stroke="#98a2b3" stroke-width="4" stroke-dasharray="8 6"/></g>
+<text class="aux-label" data-name="legend:2024" x="890" y="75" font-size="15">2024</text>
+<g id="legend-after" data-geometry-editable="true" data-editor-role="legend-symbol"><path d="M 960 70 L 1000 70" stroke="#2176c7" stroke-width="4"/></g>
+<text class="aux-label" data-name="legend:2025" x="1010" y="75" font-size="15">2025</text>
+<text class="aux-label" data-name="symbol" x="50" y="550" font-size="14">Circle: under 2 years. Only synthetic technologies; not a Gartner report.</text>
+</g></svg>

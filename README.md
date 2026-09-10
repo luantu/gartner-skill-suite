@@ -70,3 +70,7 @@ Use the skills only with source materials you are authorized to process and redi
 ## License and third-party rights
 
 Review Gartner's terms and the license of any source material before redistribution. This repository provides workflow instructions and tooling; it does not grant rights to redistribute Gartner reports or other third-party content.
+
+## Editable HC comparison
+
+Ask: “Use `$gartner-analysis` to compare these two HC reports and deliver an adjustable dual-curve HTML (`presentation_format=hc-editor`).” The agent first checks the reports and technology mappings, creates the SVG, then packages it with `gartner-structured-presentation/scripts/build_hc_editor.py`. Open the HTML to drag/edit labels, save/load layout JSON, and export the adjusted SVG/PNG. To publish, specify a Feishu document or board; the agent imports the adjusted SVG through `lark-cli` and checks the board preview. See the [workflow and commands](gartner-structured-presentation/references/hc-comparison-editor.md).

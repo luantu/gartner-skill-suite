@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HC 双年度对比编辑器</title>
+<style>
+  :root{--ink:#101828;--muted:#667085;--line:#d0d5dd;--blue:#2176c7;--panel:#fff}
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:#eef2f6;color:var(--ink);font-family:Inter,"Noto Sans SC","Microsoft YaHei",Arial,sans-serif}
+  body{display:flex;flex-direction:column;overflow:hidden}
+  .toolbar{min-height:58px;flex-wrap:wrap;display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--panel);border-bottom:1px solid #dfe3e8;box-shadow:0 2px 8px rgba(16,24,40,.06);z-index:4}
+  .toolbar strong{font-size:14px;margin-right:10px}
+  button,.file-button{border:1px solid #cfd6df;border-radius:7px;background:#fff;color:#344054;padding:7px 11px;font-size:13px;cursor:pointer;line-height:1}
+  button:hover,.file-button:hover{border-color:#98a2b3;background:#f8fafc}
+  button.primary{background:#155eef;border-color:#155eef;color:#fff}
+  .separator{width:1px;height:24px;background:#e4e7ec;margin:0 4px}
+  .lock{display:flex;align-items:center;gap:6px;font-size:12px;color:#475467;margin-left:auto;white-space:nowrap}
+  .status{min-width:180px;font-size:12px;color:#667085;text-align:right}
+  .workspace{flex:1;min-height:0;padding:12px;overflow:auto}
+  .sheet{height:100%;min-height:620px;background:#fff;border:1px solid #dfe3e8;border-radius:10px;box-shadow:0 8px 24px rgba(16,24,40,.08);overflow:hidden}
+  #chart{display:block;width:100%;height:100%;touch-action:none;user-select:none;white-space:pre}
+  .tech-label,.aux-label{cursor:grab;pointer-events:all;white-space:pre}
+  .tech-label tspan,.aux-label tspan{white-space:pre;pointer-events:all}
+  .tech-label:hover,.aux-label:hover{filter:drop-shadow(0 0 1px #fff);text-decoration:underline}
+  .tech-label.selected,.aux-label.selected{outline:1px dashed #155eef;outline-offset:2px}
+  [data-editor-role="legend-symbol"].selected{filter:drop-shadow(0 0 1.5px #155eef)}
+  #selectionRect{fill:rgba(21,94,239,.10);stroke:#155eef;stroke-width:1;stroke-dasharray:5 3;pointer-events:none}
+  .dynamic-leader{fill:none;stroke:#98a2b3;stroke-width:.42;stroke-opacity:.68;pointer-events:none}
+  .dynamic-leader.too-far{stroke:#e43d30;stroke-dasharray:3 2;stroke-opacity:.9}
+  .data-geometry.locked [data-geometry-editable="true"]{pointer-events:none}
+  .data-geometry:not(.locked) [data-geometry-editable="true"]{pointer-events:visiblePainted;cursor:move}
+  [data-editor-role="legend-symbol"]{pointer-events:all;cursor:move}
+  [data-editor-role="legend-symbol"] .editor-hit-path{fill:none;stroke:#fff;stroke-opacity:0;stroke-width:14;pointer-events:stroke}
+  .hint{position:fixed;left:22px;bottom:20px;background:rgba(16,24,40,.88);color:#fff;border-radius:7px;padding:7px 10px;font-size:12px;pointer-events:none;opacity:.9}
+  .label-editor{display:flex;align-items:center;gap:5px;min-width:260px}
+  .label-editor textarea{width:210px;height:34px;resize:vertical;border:1px solid #cfd6df;border-radius:7px;padding:6px 8px;font-size:13px;line-height:1.25;color:#344054;font-family:inherit}
+  .label-editor textarea:disabled{background:#f2f4f7;color:#98a2b3}
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <strong>手动排版</strong>
+  <button id="undoLayout" title="撤销上一次调整">撤销</button>
+  <button id="redoLayout" title="恢复上一次撤销">恢复</button>
+  <button id="resetLayout">恢复初始布局</button>
+  <div class="separator"></div>
+  <button id="saveLayout">保存位置</button>
+  <button id="loadLayout">载入位置</button>
+  <input id="layoutFile" type="file" accept="application/json" hidden>
+  <div class="separator"></div>
+  <button id="exportSvg">导出 SVG</button>
+  <button id="exportPng" class="primary">导出高清 PNG</button>
+  <div class="label-editor">
+    <textarea id="editLabel" rows="2" placeholder="先点击或双击文字标签" aria-label="文字标签编辑框" disabled></textarea>
+    <button id="applyLabel" disabled>应用文字</button>
+  </div>
+  <label class="lock"><input id="geometryLocked" type="checkbox" checked>锁定曲线与点位</label>
+  <span id="status" class="status">拖动文字即可调整</span>
+</div>
+<main class="workspace"><section class="sheet"><!-- HC_SVG --></section></main>
+<div class="hint">拖动文字；方向键微调，Shift + 方向键每次移动 5 单位</div>
+<script>
+(() => {
+  const svg = document.getElementById('chart');
+  const axes = svg.querySelector('#axes_1');
+  const status = document.getElementById('status');
+  const lock = document.getElementById('geometryLocked');
+  axes.classList.toggle('locked',lock.checked);
+  const MAX_LEADER_PX = 232;
+  const labels = [...svg.querySelectorAll('.tech-label,.aux-label')];
+  const techLabels = [...svg.querySelectorAll('.tech-label')];
+  const leaders = new Map([...svg.querySelectorAll('.dynamic-leader')].map(p => [p.dataset.for, p]));
+  const editLabel = document.getElementById('editLabel');
+  const applyLabel = document.getElementById('applyLabel');
+  let active = null, selected = null, selectedItems = [], start = null, beforeDrag = null, marquee = null;
+  const undoStack = [], redoStack = [];
+  const selectionRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  selectionRect.id = 'selectionRect'; selectionRect.setAttribute('visibility', 'hidden');
+  svg.appendChild(selectionRect);
+
+  function labelValue(node) { return node.dataset.labelText ?? node.textContent; }
+  function setLabelValue(node, value) {
+    value = String(value).replace(/\r\n?/g, '\n');
+    node.dataset.labelText = value;
+    node.setAttribute('xml:space', 'preserve');
+    node.replaceChildren(...value.split(/\r?\n/).map((line, i) => {
+      const tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+      tspan.setAttribute('xml:space', 'preserve');
+      if (i) tspan.setAttribute('dy', '1.15em');
+      tspan.textContent = line || ' ';
+      return tspan;
+    }));
+    syncLabelLines(node);
+  }
+  function syncLabelLines(node) {
+    const x = node.getAttribute('x') || '0';
+    node.querySelectorAll('tspan').forEach(tspan => tspan.setAttribute('x', x));
+  }
+  function labelFromTarget(target) {
+    let node = target;
+    while (node && node !== svg) {
+      if (node.classList?.contains('tech-label') || node.classList?.contains('aux-label')) return node;
+      node = node.parentNode;
+    }
+    return null;
+  }
+  function geometryFromTarget(target) {
+    let node = target;
+    let candidate = null;
+    while (node && node !== svg) {
+      const owner = node.getAttribute?.('data-editor-owner');
+      if (owner) return document.getElementById(owner);
+      if (node.getAttribute?.('data-geometry-editable') === 'true') return node;
+      // Only explicitly registered geometry participates in layout history.
+      node = node.parentNode;
+    }
+    return candidate;
+  }
+
+  function svgPoint(event) {
+    const p = svg.createSVGPoint(); p.x = event.clientX; p.y = event.clientY;
+    return p.matrixTransform(svg.getScreenCTM().inverse());
+  }
+  function setSelected(node) {
+    if (selected) selected.classList.remove('selected');
+    selected = node;
+    if (selected) selected.classList.add('selected');
+    editLabel.disabled = !selected;
+    applyLabel.disabled = !selected;
+    editLabel.value = selected ? labelValue(selected) : '';
+  }
+  function selectableItems() {
+    return [...new Set([...labels, ...svg.querySelectorAll('[data-geometry-editable="true"]')])];
+  }
+  function setSelection(items) {
+    selectedItems = [...new Set(items)].filter(Boolean);
+    selectableItems().forEach(n => n.classList.toggle('selected', selectedItems.includes(n)));
+    selected = selectedItems.find(n => n.matches?.('.tech-label,.aux-label')) || null;
+    editLabel.disabled = !selected;
+    applyLabel.disabled = !selected;
+    editLabel.value = selected ? labelValue(selected) : '';
+  }
+  function itemBox(item) { try { return item.getBoundingClientRect(); } catch (_) { return null; } }
+  function boxIntersects(a,b) { return a && b && a.left <= b.right && a.right >= b.left && a.top <= b.bottom && a.bottom >= b.top; }
+  function clientRectFromPoints(a,b) { return {left:Math.min(a.x,b.x),top:Math.min(a.y,b.y),right:Math.max(a.x,b.x),bottom:Math.max(a.y,b.y)}; }
+  function beginTextEdit(node) {
+    setSelected(node);
+    editLabel.focus();
+    editLabel.select();
+    status.textContent = '正在编辑文字标签：' + node.textContent;
+  }
+  function applyTextEdit() {
+    if (!selected) return;
+    const value = editLabel.value.replace(/\r\n?/g, '\n');
+    if (!value.length) { status.textContent = '文字标签不能为空'; return; }
+    const old = snapshot();
+    setLabelValue(selected, value);
+    updateLeader(selected);
+    pushHistory(old);
+    editLabel.value = value;
+    status.textContent = '文字标签已更新：' + value;
+  }
+  function updateLeader(label) {
+    if (!label.classList.contains('tech-label')) return;
+    const leader = leaders.get(label.dataset.name); if (!leader) return;
+    const px = Number(label.dataset.pointX), py = Number(label.dataset.pointY);
+    const box = label.getBBox();
+    const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
+    const vx = px - cx, vy = py - cy;
+    const tx = Math.abs(vx) < .001 ? Infinity : (box.width / 2 + 2) / Math.abs(vx);
+    const ty = Math.abs(vy) < .001 ? Infinity : (box.height / 2 + 2) / Math.abs(vy);
+    const t = Math.min(tx, ty, 1);
+    const ex = cx + vx * t, ey = cy + vy * t;
+    const length = Math.hypot(px - ex, py - ey);
+    leader.setAttribute('d', `M ${px} ${py} L ${ex} ${ey}`);
+    leader.classList.toggle('too-far', length > MAX_LEADER_PX);
+    return length;
+  }
+  function updateAllLeaders() { techLabels.forEach(updateLeader); }
+  function refreshLoadedLayout() {
+    labels.forEach(syncLabelLines);
+    svg.getBoundingClientRect();
+    updateAllLeaders();
+  }
+  function snapshot() {
+    return {
+      labels: Object.fromEntries(labels.map((n,i) => [n.dataset.name || `aux-${i}`, {x:n.getAttribute('x'), y:n.getAttribute('y'), text:labelValue(n)}])),
+      geometry: Object.fromEntries([...svg.querySelectorAll('[data-geometry-editable="true"]')].map(n => [n.id, n.getAttribute('transform') || '']))
+    };
+  }
+  function applyState(state) {
+    if (!state || typeof state !== 'object') throw new Error('Invalid layout');
+    for (const v of Object.values(state.labels || {})) {
+      if (!v || !Number.isFinite(Number(v.x)) || !Number.isFinite(Number(v.y))) throw new Error('Invalid coordinates');
+    }
+    labels.forEach((n,i) => {
+      const v = state.labels?.[n.dataset.name || `aux-${i}`];
+      if(v){
+        n.setAttribute('x',v.x);
+        n.setAttribute('y',v.y);
+        if(v.text!==undefined) setLabelValue(n,v.text);
+        else syncLabelLines(n);
+      }
+    });
+    [...svg.querySelectorAll('[data-geometry-editable="true"]')].forEach(n => { const v=state.geometry?.[n.id]; if(v!==undefined) v ? n.setAttribute('transform',v) : n.removeAttribute('transform'); });
+    // SVG text/transform layout can settle on the next frame. Refresh now and again
+    // after the browser has committed the new attributes, so no drag is needed.
+    refreshLoadedLayout();
+    requestAnimationFrame(() => refreshLoadedLayout());
+    requestAnimationFrame(() => requestAnimationFrame(refreshLoadedLayout));
+    if (selected) editLabel.value = labelValue(selected);
+  }
+  function pushHistory(oldState) { undoStack.push(oldState); if(undoStack.length>80) undoStack.shift(); redoStack.length=0; }
+  function download(name, blob) { const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); }
+
+  function beginDrag(e) {
+    if (e.button !== undefined && e.button !== 0) return;
+    const label = labelFromTarget(e.target);
+    const geometry = !label && !lock.checked ? geometryFromTarget(e.target) : null;
+    const item = label || geometry;
+    const client = {x:e.clientX,y:e.clientY};
+    if (!item) {
+      setSelection([]); marquee = {start:client,current:client};
+      selectionRect.setAttribute('x',0); selectionRect.setAttribute('y',0); selectionRect.setAttribute('width',0); selectionRect.setAttribute('height',0); selectionRect.setAttribute('visibility','visible');
+      beforeDrag = snapshot(); e.preventDefault(); return;
+    }
+    if (!selectedItems.includes(item)) setSelection(e.shiftKey ? [...selectedItems,item] : [item]);
+    const p = svgPoint(e);
+    active = item; start={p,items:selectedItems.map(n=>({node:n,x:n.getAttribute('x'),y:n.getAttribute('y'),transform:n.getAttribute('transform')||''}))}; beforeDrag=snapshot(); e.preventDefault();
+  }
+  svg.addEventListener('pointerdown', beginDrag);
+  svg.addEventListener('dragstart', e => e.preventDefault());
+  svg.addEventListener('dblclick', e => {
+    const label = labelFromTarget(e.target);
+    if (label) beginTextEdit(label);
+  });
+  function moveDrag(e) {
+    if (marquee) { marquee.current={x:e.clientX,y:e.clientY}; const r=clientRectFromPoints(marquee.start,marquee.current); const a=svgPoint({clientX:r.left,clientY:r.top}), b=svgPoint({clientX:r.right,clientY:r.bottom}); selectionRect.setAttribute('x',Math.min(a.x,b.x)); selectionRect.setAttribute('y',Math.min(a.y,b.y)); selectionRect.setAttribute('width',Math.abs(b.x-a.x)); selectionRect.setAttribute('height',Math.abs(b.y-a.y)); if(Math.abs(r.right-r.left)+Math.abs(r.bottom-r.top)>4) setSelection(selectableItems().filter(item=>(!lock.checked || item.matches('.tech-label,.aux-label')) && boxIntersects(itemBox(item),r))); return; }
+    if(!active) return; const p=svgPoint(e), dx=p.x-start.p.x, dy=p.y-start.p.y;
+    start.items.forEach(info=>{const node=info.node;if(node.matches('.tech-label,.aux-label')){node.setAttribute('x',Number(info.x)+dx);node.setAttribute('y',Number(info.y)+dy);syncLabelLines(node);updateLeader(node);}else{node.setAttribute('transform',`${info.transform} translate(${dx} ${dy})`);}});
+    status.textContent=selectedItems.length>1?'正在移动 '+selectedItems.length+' 个元素':'正在调整：'+(active.dataset.name||labelValue(active));
+  }
+  function endDrag(e) { if(marquee){selectionRect.setAttribute('visibility','hidden');marquee=null;if(selectedItems.length)status.textContent='已选中 '+selectedItems.length+' 个元素';return;} if(active){pushHistory(beforeDrag);status.textContent='调整已记录';} active=null;start=null;beforeDrag=null; }
+  document.addEventListener('pointermove', moveDrag);
+  document.addEventListener('pointerup', endDrag);
+  document.addEventListener('pointercancel', endDrag);
+  document.addEventListener('keydown',e=>{
+    if (e.target.closest?.('textarea,input,[contenteditable]')) return;
+    if(!selected || !['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) return;
+    e.preventDefault(); const old=snapshot(), step=e.shiftKey?5:1;
+    const dx=e.key==='ArrowLeft'?-step:e.key==='ArrowRight'?step:0, dy=e.key==='ArrowUp'?-step:e.key==='ArrowDown'?step:0;
+    selected.setAttribute('x',Number(selected.getAttribute('x'))+dx); selected.setAttribute('y',Number(selected.getAttribute('y'))+dy); syncLabelLines(selected); updateLeader(selected); pushHistory(old);
+  });
+  lock.addEventListener('change',()=>{axes.classList.toggle('locked',lock.checked);if(lock.checked)setSelection(selectedItems.filter(n=>n.matches('.tech-label,.aux-label')));status.textContent=lock.checked?'曲线与点位已锁定':'警告：数据图层已解锁';});
+  document.getElementById('undoLayout').onclick=()=>{if(!undoStack.length)return;redoStack.push(snapshot());applyState(undoStack.pop());};
+  document.getElementById('redoLayout').onclick=()=>{if(!redoStack.length)return;undoStack.push(snapshot());applyState(redoStack.pop());};
+  document.getElementById('resetLayout').onclick=()=>{const old=snapshot();labels.forEach(n=>{n.setAttribute('x',n.dataset.originalX);n.setAttribute('y',n.dataset.originalY);if(n.dataset.originalText!==undefined)setLabelValue(n,n.dataset.originalText);});svg.querySelectorAll('[data-geometry-editable="true"]').forEach(n=>{const t=n.dataset.originalTransform;t?n.setAttribute('transform',t):n.removeAttribute('transform');});updateAllLeaders();if(selected)editLabel.value=labelValue(selected);pushHistory(old);status.textContent='已恢复初始布局 初始排版';};
+  document.getElementById('saveLayout').onclick=()=>download('hype-cycle-layout.json',new Blob([JSON.stringify(snapshot(),null,2)],{type:'application/json'}));
+  document.getElementById('loadLayout').onclick=()=>document.getElementById('layoutFile').click();
+  document.getElementById('layoutFile').onchange=async e=>{try{const old=snapshot();applyState(JSON.parse(await e.target.files[0].text()));refreshLoadedLayout();pushHistory(old);status.textContent='位置文件已载入';}catch(err){status.textContent='位置文件无法读取';}e.target.value='';};
+  function cleanSvg() {
+    const clone=svg.cloneNode(true);
+    clone.querySelectorAll('.selected').forEach(n=>n.classList.remove('selected'));
+    clone.querySelectorAll('.editor-hit-path,#selectionRect').forEach(n=>n.remove());
+    clone.setAttribute('width',svg.viewBox.baseVal.width);
+    clone.setAttribute('height',svg.viewBox.baseVal.height);
+    clone.querySelectorAll('.dynamic-leader').forEach(n=>{n.setAttribute('fill','none');n.setAttribute('stroke','#98a2b3');n.setAttribute('stroke-width','0.42');});
+    clone.removeAttribute('style');
+    const defs=clone.querySelector('defs') || clone.insertBefore(document.createElementNS('http://www.w3.org/2000/svg','defs'),clone.firstChild);
+    const style=document.createElementNS('http://www.w3.org/2000/svg','style');
+    style.setAttribute('type','text/css');
+    style.textContent='.dynamic-leader{fill:none;stroke:#98a2b3;stroke-width:.42;stroke-opacity:.68;pointer-events:none}.dynamic-leader.too-far{stroke:#e43d30;stroke-dasharray:3 2;stroke-opacity:.9}';
+    defs.appendChild(style);
+    return clone;
+  }
+  document.getElementById('exportSvg').onclick=()=>{const xml=new XMLSerializer().serializeToString(cleanSvg());download('hc-comparison-edited.svg',new Blob([xml],{type:'image/svg+xml'}));};
+  document.getElementById('exportPng').onclick=()=>{
+    const clone=cleanSvg(), box=svg.viewBox.baseVal, xml=new XMLSerializer().serializeToString(clone), blob=new Blob([xml],{type:'image/svg+xml'}), url=URL.createObjectURL(blob), img=new Image();
+    img.onload=()=>{const canvas=document.createElement('canvas');canvas.width=2560;canvas.height=Math.round(2560*box.height/box.width);const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);URL.revokeObjectURL(url);canvas.toBlob(png=>download('hc-comparison-edited.png',png),'image/png');};img.src=url;
+  };
+  labels.forEach(n => { n.dataset.originalText = labelValue(n); setLabelValue(n, n.dataset.originalText); });
+  applyLabel.onclick = applyTextEdit;
+  editLabel.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); applyTextEdit(); }
+    if (e.key === 'Escape' && selected) editLabel.value = labelValue(selected);
+  });
+  updateAllLeaders();
+})();
+</script>
+</body>
+</html>
