@@ -60,6 +60,21 @@ class SkillStructureTests(unittest.TestCase):
             self.assertIn(term, protocol)
         self.assertIn("最多 5", protocol)
 
+    def test_hc_technology_detail_table_keeps_columns_semantically_aligned(self):
+        protocol = (SKILLS_ROOT / "gartner-structured-presentation" / "references" / "presentation-contract.md").read_text(encoding="utf-8")
+        self.assertIn("| **Technology (English)** | 技术 | **Technology (English)** |", protocol)
+        self.assertIn("|  | 技术成熟度 |", protocol)
+        self.assertIn("|  | 优先级矩阵 |", protocol)
+        self.assertIn("|  | 市场渗透率 |", protocol)
+        self.assertIn("|  | 业务影响 |", protocol)
+        self.assertIn("第一列只放技术名称", protocol)
+        self.assertIn("第二列只放主题名称", protocol)
+        self.assertIn("第三列只放该主题的内容", protocol)
+        self.assertIn("不得固定为 `h6`", protocol)
+        self.assertIn("表头居中", protocol)
+        self.assertIn("单元格垂直居中", protocol)
+        self.assertIn("Sample Vendors", protocol)
+
     def test_mq_contract_requires_two_year_comparison_and_reference_style_blocks(self):
         protocol = (SKILLS_ROOT / "gartner-structured-presentation" / "references" / "presentation-contract.md").read_text(encoding="utf-8")
         for term in ["2025 年位置", "2026 年位置", "主要变化", "h4", "h5", "h6", "不得生成年度关键变化"]:
