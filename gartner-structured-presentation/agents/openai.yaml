@@ -1,0 +1,7 @@
+interface:
+  display_name: "Gartner 结构化呈现"
+  short_description: "将 HC/MQ 分析整理为章节和结构化表格"
+  default_prompt: "Use $gartner-structured-presentation to arrange completed Gartner HC/MQ analysis into a chapter, table, or Feishu-ready presentation."
+
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Gartner PDF 中文保真翻译"
+  short_description: "保留术语、版式、图表和链接的 Gartner PDF 中文翻译"
+  default_prompt: "使用 $gartner-pdf-zh-translation，将指定 Gartner PDF 翻译为中文 PDF，并完成逐页 QA。"
+
+policy:
+  allow_implicit_invocation: true

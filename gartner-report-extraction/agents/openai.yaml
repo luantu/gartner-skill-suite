@@ -1,0 +1,7 @@
+interface:
+  display_name: "Gartner 报告提炼"
+  short_description: "读取 Gartner HC/MQ PDF 并提炼结构化信息"
+  default_prompt: "Use $gartner-report-extraction to extract auditable Gartner PDF metadata, fields, tables, page anchors, and evidence gaps."
+
+policy:
+  allow_implicit_invocation: false

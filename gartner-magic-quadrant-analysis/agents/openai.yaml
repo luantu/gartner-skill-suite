@@ -1,0 +1,7 @@
+interface:
+  display_name: "Gartner MQ 分析"
+  short_description: "解读或比较 Gartner Magic Quadrant"
+  default_prompt: "Use $gartner-magic-quadrant-analysis for single-year MQ interpretation or same-market annual comparison with page-level evidence."
+
+policy:
+  allow_implicit_invocation: false
