@@ -1,5 +1,7 @@
 # Gartner Skill Suite
 
+For an end-to-end two-PDF HC report, ask `gartner-analysis` to produce a complete Feishu technology-insight document. The `hc-feishu-insight` presentation profile chains extraction, annual analysis, native XML publishing, and readback checks, including editable charts and technology coverage. Company deployment status requires separate evidence; full translations and MQ inputs are not prerequisites. See the [delivery contract](gartner-structured-presentation/references/hc-feishu-insight.md).
+
 English | [简体中文](README.zh-CN.md)
 
 A modular skill suite for auditable Gartner research workflows: PDF extraction, Chinese translation, Hype Cycle and Magic Quadrant analysis, annual comparison, cross-report insight, and structured presentation.

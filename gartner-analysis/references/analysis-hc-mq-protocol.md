@@ -13,6 +13,8 @@
 
 先完成同类型两份翻译，再建立结构化底表。HC 只与 HC 比较，MQ 只与 MQ 比较。不要从第 7 份交叉洞察倒推变化结论。
 
+以上翻译和下方七章结构是常规研究套件流程。`presentation_format=hc-feishu-insight` 只要求直接核对原始 PDF 并建立完整字段和证据映射，不强制全文翻译；最终树和交付验收使用[专用契约](../../gartner-structured-presentation/references/hc-feishu-insight.md)。字段语义、可比性和证据标准仍须遵守。
+
 双年分析固定使用：
 
 1. 总结概述；
@@ -50,6 +52,7 @@
 
 - Technology；
 - Hype Cycle Stage；
+- Maturity（采用成熟度，不能与曲线阶段混用）；
 - Benefit Rating；
 - Years to Mainstream Adoption；
 - Market Penetration；
@@ -197,6 +200,8 @@ Gartner 结论字段不得只复述变化事实。必须包含 Gartner 在正文
 单年 HC 底表覆盖全部 Innovation Profile；单年 MQ 底表覆盖市场、方法和全部 Vendor Profile。不要出现“上升”“下降”“新增”“移除”“跃升”或跨年箭头。
 
 ## 6 禁止混写
+
+本节不禁止 `hc-feishu-insight` 明确标记的 HC 内部分析师采用／架构判断和有用户证据的布局状态整理，适用边界见[专用契约](../../gartner-structured-presentation/references/hc-feishu-insight.md#2-分析先于排版)。指定厂商竞争策略和 HC×MQ 跨报告趋势不属于这个例外。
 
 HC/MQ 分析只陈述 Gartner 原文明确包含的 Business Impact、User Recommendations、市场定义和厂商评价，不自行推演行业影响、企业用户影响或行动含义。不要出现：
 

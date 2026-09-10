@@ -13,6 +13,7 @@ description: Use when a Gartner request spans PDF extraction, Chinese PDF transl
 | 将 PDF 做成中文保真 PDF，并保留版式、链接和逐页 QA | `gartner-pdf-zh-translation`，`mode=translate-pdf` |
 | 解读单份 Hype Cycle（HC） | `gartner-hype-cycle-analysis`，`mode=single-hc` |
 | 比较同一 HC 的两个年度版本 | `gartner-hype-cycle-analysis`，`mode=annual-hc` |
+| 两份 HC 直接产出完整飞书技术线索报告／按终稿样例交付 | 连续编排提炼、`annual-hc`、`presentation_format=hc-feishu-insight`、发布与回读，见[交付契约](../gartner-structured-presentation/references/hc-feishu-insight.md) |
 | 解读单份 Magic Quadrant（MQ） | `gartner-magic-quadrant-analysis`，`mode=single-mq` |
 | 比较同一市场多个 MQ 年度版本 | `gartner-magic-quadrant-analysis`，`mode=annual-mq` |
 | 结合已完成的 HC 与 MQ 做交叉洞察 | `gartner-hc-mq-insight`，`mode=cross-insight` |
@@ -20,6 +21,8 @@ description: Use when a Gartner request spans PDF extraction, Chinese PDF transl
 | 把已完成结果编排成章节、表格或飞书呈现稿 | `gartner-structured-presentation`，`mode=presentation` |
 
 `gartner-annual-comparison` 是兼容入口：只有用户显式点名它时才使用，并立即转到 HC 的 `annual-hc` 模式，不再维护第二套分析流程。
+
+“两份 HC → 完整飞书文档”是一个交付目标：主模式仍为 `annual-hc`，必要的上游提炼和下游呈现／发布应连续完成，不因“一次一个主模式”停在中间。自动启用 `presentation_format=hc-feishu-insight` 和 `feishu_output=true`，不要求用户重复指定参数、提供 MQ 或先做全文翻译。只读样例仅用于结构参照，不能成为写入目标。
 
 ## 共享不变量
 

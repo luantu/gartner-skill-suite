@@ -8,6 +8,7 @@
 | 中文保真 PDF 与逐页 QA | `translate-pdf` | `gartner-pdf-zh-translation` |
 | 单份 HC 解读 | `single-hc` | `gartner-hype-cycle-analysis` |
 | 同一 HC 两年度比较 | `annual-hc` | `gartner-hype-cycle-analysis` |
+| 两份 HC 到完整飞书技术线索报告 | `annual-hc` → `presentation`，`presentation_format=hc-feishu-insight` | 总路由连续编排，不停在中间稿 |
 | 单份 MQ 解读 | `single-mq` | `gartner-magic-quadrant-analysis` |
 | 同一 MQ 多年度比较 | `annual-mq` | `gartner-magic-quadrant-analysis` |
 | HC 与 MQ 交叉洞察 | `cross-insight` | `gartner-hc-mq-insight` |
@@ -15,6 +16,8 @@
 | 章节和表格呈现 | `presentation` | `gartner-structured-presentation` |
 
 一次请求选择一个主模式。完整研究套件可以串联多个模式，但每个阶段仍分别验收。
+
+完整飞书 HC 报告是同一主目标的必要阶段串联，不等于用户要求 HC×MQ 全套研究。按[飞书技术线索交付契约](../../gartner-structured-presentation/references/hc-feishu-insight.md)执行提炼、年度分析、呈现、发布与回读。
 
 ## 交接参数
 
@@ -31,7 +34,8 @@ target_vendor: null
 domain_profile: null
 external_evidence: false
 feishu_output: false
-presentation_format: chapters | hc-editor  # 仅 presentation；默认 chapters
+presentation_format: chapters | hc-editor | hc-feishu-insight  # 默认 chapters；完整飞书HC报告自动选最后一项
+business_context: null  # 可选：用户明确的应用范围、企业现状和布局证据；不从PDF推定企业已布局
 evidence_status: complete | partial | blocked
 ```
 
@@ -46,6 +50,8 @@ evidence_status: complete | partial | blocked
 `evidence_status=blocked` 时停止生成依赖该证据的结论；`partial` 时明确标出缺口和不可比范围。
 
 `presentation_format=hc-editor` 要求已核对的两份 HC 数据和年度映射；输出可调整 HTML、布局 JSON、SVG 和 QA。源输入只有 PDF 时先完成提炼／年度分析。画板目标来自用户当前指定并 fetch 确认，发布可选；详细流程见 [HC 双曲线编辑器](../../gartner-structured-presentation/references/hc-comparison-editor.md)。
+
+`presentation_format=hc-feishu-insight` 使用同一 HC 数据生成整篇技术线索文档，包含两类画板、双年 HC／Priority Matrix 原图、总览和逐技术详情。源报告全集、映射、详情选择和发布后 block ID 记录在 `hc-delivery-manifest.json`。没有企业布局证据时明确未知，完成通用报告；没有明确可写目标时新建独立文档。阶段状态和验收以该配置契约为准。
 
 ## 资源归属
 

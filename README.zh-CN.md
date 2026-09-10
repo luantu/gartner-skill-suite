@@ -74,3 +74,7 @@ PDF 翻译 Skill 还提供了位于 `gartner-pdf-zh-translation/scripts/` 中的
 ## 可调整 HC 双曲线对比
 
 调用示例：“使用 `$gartner-analysis` 比较这两份 HC，生成可调整的双曲线 HTML（`presentation_format=hc-editor`）。”Agent 先核对报告与技术映射、生成 SVG，再通过 `gartner-structured-presentation/scripts/build_hc_editor.py` 打包 HTML。浏览器中可拖动、编辑标签，保存／载入布局 JSON，导出调整后的 SVG／PNG。需要发布时指定飞书文档或画板，Agent 使用 `lark-cli` 写入 SVG 并回读预览。详见[完整流程与命令](gartner-structured-presentation/references/hc-comparison-editor.md)。
+
+## 两份 HC 直接生成飞书技术线索报告
+
+调用示例：“使用 `$gartner-analysis`，根据这两份 HC 生成完整飞书技术线索文档，包含洞察总结、双曲线画板、年度总览和逐技术详情。”自动使用 `hc-feishu-insight` 配置，连续完成提炼、年度分析、XML 排版、发布与回读；无需额外提供 MQ 或先生成全文译稿。企业布局资料可选，缺失时明确未知。详见[交付结构和验收](gartner-structured-presentation/references/hc-feishu-insight.md)。
