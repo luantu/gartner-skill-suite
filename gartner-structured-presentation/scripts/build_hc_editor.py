@@ -14,6 +14,15 @@ ET.register_namespace('', NS)
 ET.register_namespace('xlink', 'http://www.w3.org/1999/xlink')
 
 
+def validate_css(css):
+    # Local presentation CSS is needed to reopen browser exports. Reject
+    # escapes/comments rather than attempting incomplete CSS canonicalization.
+    if any(token in css for token in ('\\', '/*', '@')) or re.search(r'javascript:|expression\s*\(|-moz-binding|behavior\s*:', css, re.I):
+        raise ValueError('Unsafe SVG style')
+    for target in re.findall(r'url\((.*?)\)', css, re.I):
+        if not target.strip(' \"\'').startswith('#'):
+            raise ValueError('Only local SVG resource references are allowed')
+
 def prepare(svg_text):
     if re.search(r'<!DOCTYPE|<!ENTITY', svg_text, re.I):
         raise ValueError('DTD/entities are not supported')
@@ -24,17 +33,20 @@ def prepare(svg_text):
     if len(box) != 4 or not all(map(math.isfinite, box)) or min(box[2:]) <= 0:
         raise ValueError('A finite positive viewBox is required')
     ids = set()
-    labels, leaders, years = [], {}, set()
+    labels, leaders, years, points, connectors = [], {}, set(), {}, []
+    track_groups = []
     for n in root.iter():
         tag = n.tag.split('}')[-1]
-        if tag in {'script', 'foreignObject', 'image', 'style', 'animate', 'set'}:
+        if tag in {'script', 'foreignObject', 'image', 'animate', 'set'}:
             raise ValueError(f'Unsupported element: {tag}; use self-contained SVG primitives and inline styles')
+        if tag == 'style':
+            validate_css(n.text or '')
         for key, value in n.attrib.items():
             k = key.split('}')[-1].lower()
             if k.startswith('on') or (k in {'href','src'} and not value.startswith('#')):
                 raise ValueError('Executable or external resources are not allowed')
-            if k == 'style' and re.search(r'@import|javascript:|expression\s*\(', value, re.I):
-                raise ValueError('Unsafe SVG style')
+            if k == 'style':
+                validate_css(value)
             for url in re.findall(r'url\((.*?)\)', value, re.I):
                 if not url.strip(' \"\'').startswith('#'):
                     raise ValueError('Only local SVG resource references are allowed')
@@ -66,6 +78,17 @@ def prepare(svg_text):
             leaders[key] = n
         if n.get('data-hc-year'):
             years.add(n.get('data-hc-year'))
+            track_groups.append(n)
+        if ident and ident.startswith('point-'):
+            match = re.fullmatch(r'point-(.+)-(\d{4})', ident)
+            if not match:
+                raise ValueError('Point id must be point-{technology}-{year}')
+            key = (match.group(1), match.group(2))
+            if key in points:
+                raise ValueError('Duplicate annual point')
+            points[key] = n
+        if ident and ident.startswith('migration-'):
+            connectors.append((ident, n))
         if n.get('data-geometry-editable') == 'true':
             if not ident:
                 raise ValueError('Editable geometry requires a stable id')
@@ -73,8 +96,20 @@ def prepare(svg_text):
     axes = root.find(f'.//*[@id="axes_1"]')
     if axes is None:
         raise ValueError('Missing axes_1 group')
-    if len(years) != 2 or any(not re.fullmatch(r'\d{4}', y) for y in years):
+    if len(track_groups) != 2 or any(n.tag != f'{{{NS}}}g' for n in track_groups) or len(years) != 2 or any(not re.fullmatch(r'\d{4}', y) for y in years):
         raise ValueError('Exactly two distinct data-hc-year curve groups are required')
+    if len(points) and set(y for _, y in points) - years:
+        raise ValueError('Point year must match one of the two track years')
+    for ident, node in connectors:
+        tech = ident.removeprefix('migration-')
+        annual = [p for (name, _), p in points.items() if name == tech]
+        if len(annual) != 2:
+            raise ValueError('Migration connector requires exactly two annual points')
+        xy = {(p.get('data-source-normalized-x'), p.get('data-source-normalized-y')) for p in annual}
+        if any(None in pair for pair in xy):
+            raise ValueError('Migration points require source normalized coordinates')
+        if len(xy) == 1:
+            raise ValueError('Same-source-position technology must not have a migration connector')
     tech = [n for n in labels if 'tech-label' in n.get('class','').split()]
     keys = [n.get('data-name') for n in labels]
     if not tech or any(not k for k in keys) or len(keys) != len(set(keys)):

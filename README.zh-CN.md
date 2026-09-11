@@ -55,7 +55,7 @@
 在 `gartner-analysis/` 目录执行：
 
 ```bash
-python3 -m pytest -q tests
+python3 -B -m pytest -q -p no:cacheprovider tests ../gartner-structured-presentation/tests
 python3 scripts/validate_terminology.py --skills-root ..
 ```
 
@@ -73,7 +73,7 @@ PDF 翻译 Skill 还提供了位于 `gartner-pdf-zh-translation/scripts/` 中的
 
 ## 可调整 HC 双曲线对比
 
-调用示例：“使用 `$gartner-analysis` 比较这两份 HC，生成可调整的双曲线 HTML（`presentation_format=hc-editor`）。”Agent 先核对报告与技术映射、生成 SVG，再通过 `gartner-structured-presentation/scripts/build_hc_editor.py` 打包 HTML。浏览器中可拖动、编辑标签，保存／载入布局 JSON，导出调整后的 SVG／PNG。需要发布时指定飞书文档或画板，Agent 使用 `lark-cli` 写入 SVG 并回读预览。详见[完整流程与命令](gartner-structured-presentation/references/hc-comparison-editor.md)。
+调用示例：“使用 `$gartner-analysis` 比较这两份 HC，生成可调整的双曲线 HTML（`presentation_format=hc-editor`）。”Agent 先核对报告、技术映射和原图坐标，再通过 `gartner-structured-presentation/scripts/build_hc_template.py` 填充内置双轨 SVG／HTML 模板，依赖 Python 3 与 `lxml`。浏览器完成标签排版后，由 `validate_hc_template.py` 核验来源哈希、年度点位、迁移关系、符号、颜色与模板几何。通用 `build_hc_editor.py` 继续用于重新打包已验收的 SVG。浏览器排版脚本导出 SVG／PNG／布局 JSON 后，Agent 还需把验收后的 SVG 嵌回 HTML，并检查重新打开和恢复初始布局能否复现验收版本。浏览器中可拖动、编辑标签，保存／载入布局 JSON，导出调整后的 SVG／PNG。需要发布时指定飞书文档或画板，Agent 使用 `lark-cli` 写入 SVG 并回读预览。详见[完整流程与命令](gartner-structured-presentation/references/hc-comparison-editor.md)。
 
 ## 两份 HC 直接生成飞书技术线索报告
 

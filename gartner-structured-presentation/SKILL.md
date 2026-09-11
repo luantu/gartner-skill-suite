@@ -9,7 +9,7 @@ description: Use when Gartner HC or MQ analysis needs structured chapters, table
 
 - `report_type=HC`：使用 HC 章节模板，保留阶段、Priority Matrix、技术线索和单年比较边界。
 - `presentation_format=hc-feishu-insight`：两份 HC 到完整飞书技术线索报告，按[专用交付契约](references/hc-feishu-insight.md)组织洞察总结、两类画板、双年原图、全技术总览与逐技术详情；此配置优先于通用 HC 章节模板，发布后使用 [XML 验收器](scripts/validate_hc_delivery.py)。
-- `presentation_format=hc-editor`：用户要求两份 HC 的双曲线、技术迁移图或可调整 HTML 时，使用[双曲线编辑器流程](references/hc-comparison-editor.md)，交付自包含 HTML、布局 JSON 与 SVG；数据不足先交还提炼／年度分析。
+- `presentation_format=hc-editor`：用户要求两份 HC 的双曲线、技术迁移图或可调整 HTML 时，使用[双曲线编辑器流程](references/hc-comparison-editor.md)，交付自包含 HTML、布局 JSON、SVG 与 PNG；标准双曲线沿用[固定模板和图表门禁](references/hc-template-contract.md)，用户模板优先，分面只能作为附图；数据不足先交还提炼／年度分析。
 - `report_type=MQ`：使用 MQ 章节模板，保留关键变化、位置变化表和能力分析表。
 - 只有存在两年同市场输入时，才生成年度变化、趋势或象限移动；否则明确写“暂无年度比较数据”。
 - MQ 模板直接使用 `1.1 关键变化`，去除“关键变化洞察”标题，避免重复层级。

@@ -57,7 +57,7 @@ A modular skill suite for auditable Gartner research workflows: PDF extraction, 
 From `gartner-analysis/`:
 
 ```bash
-python3 -m pytest -q tests
+python3 -B -m pytest -q -p no:cacheprovider tests ../gartner-structured-presentation/tests
 python3 scripts/validate_terminology.py --skills-root ..
 ```
 
@@ -75,4 +75,4 @@ Review Gartner's terms and the license of any source material before redistribut
 
 ## Editable HC comparison
 
-Ask: “Use `$gartner-analysis` to compare these two HC reports and deliver an adjustable dual-curve HTML (`presentation_format=hc-editor`).” The agent first checks the reports and technology mappings, creates the SVG, then packages it with `gartner-structured-presentation/scripts/build_hc_editor.py`. Open the HTML to drag/edit labels, save/load layout JSON, and export the adjusted SVG/PNG. To publish, specify a Feishu document or board; the agent imports the adjusted SVG through `lark-cli` and checks the board preview. See the [workflow and commands](gartner-structured-presentation/references/hc-comparison-editor.md).
+Ask: “Use `$gartner-analysis` to compare these two HC reports and deliver an adjustable dual-curve HTML (`presentation_format=hc-editor`).” The agent first checks the reports, technology mappings, and source chart coordinates, then uses `gartner-structured-presentation/scripts/build_hc_template.py` to populate the bundled two-track SVG/HTML template. This requires Python 3 and `lxml`. After browser label layout, `validate_hc_template.py` checks source hashes, annual points, migration relations, symbols, colours, and template geometry. The generic `build_hc_editor.py` remains available for repackaging validated SVGs. The browser layout script exports SVG/PNG/layout JSON; before delivery, the agent must embed the accepted SVG back into the HTML and check that reopening/resetting reproduces the accepted layout. Open the HTML to drag/edit labels, save/load layout JSON, and export the adjusted SVG/PNG. To publish, specify a Feishu document or board; the agent imports the adjusted SVG through `lark-cli` and checks the board preview. See the [workflow and commands](gartner-structured-presentation/references/hc-comparison-editor.md).

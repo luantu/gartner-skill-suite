@@ -20,6 +20,16 @@ class EditorPackagingTests(unittest.TestCase):
             self.assertNotIn('<!-- HC_SVG -->',text)
             with self.assertRaises(FileExistsError):
                 builder.build(SVG,out)
+    def test_multiple_facets_with_only_two_distinct_years_are_rejected(self):
+        extra = '<g id="extra-track" data-hc-year="2024"><path d="M 0 0 L 5 5"/></g>'
+        with self.assertRaises(ValueError):
+            builder.prepare(SVG.read_text().replace('</svg>', extra + '</svg>'))
+    def test_safe_local_style_export_can_be_reopened(self):
+        builder.prepare(SVG.read_text().replace('</svg>', '<style>.dynamic-leader{stroke:#98a2b3}</style></svg>'))
+    def test_unsafe_css_is_rejected(self):
+        for css in ['@import "https://example.com/a.css";', '*{fill:url(https://example.com/a)}', r'*{fill:u\72l(https://example.com/a)}']:
+            with self.assertRaises(ValueError):
+                builder.prepare(SVG.read_text().replace('</svg>', '<style>'+css+'</style></svg>'))
     def test_missing_second_year_is_rejected(self):
         with self.assertRaises(ValueError):
             builder.prepare(SVG.read_text().replace('data-hc-year="2025"','data-hc-year="2024"'))

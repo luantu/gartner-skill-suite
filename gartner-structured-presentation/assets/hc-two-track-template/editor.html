@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HC 双年度对比编辑器</title>
+<title>HC 双年度曲线编辑器</title>
 <style>
   :root{--ink:#101828;--muted:#667085;--line:#d0d5dd;--blue:#2176c7;--panel:#fff}
   *{box-sizing:border-box}
   html,body{height:100%;margin:0;background:#eef2f6;color:var(--ink);font-family:Inter,"Noto Sans SC","Microsoft YaHei",Arial,sans-serif}
   body{display:flex;flex-direction:column;overflow:hidden}
-  .toolbar{min-height:58px;flex-wrap:wrap;display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--panel);border-bottom:1px solid #dfe3e8;box-shadow:0 2px 8px rgba(16,24,40,.06);z-index:4}
+  .toolbar{height:58px;display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--panel);border-bottom:1px solid #dfe3e8;box-shadow:0 2px 8px rgba(16,24,40,.06);z-index:4}
   .toolbar strong{font-size:14px;margin-right:10px}
   button,.file-button{border:1px solid #cfd6df;border-radius:7px;background:#fff;color:#344054;padding:7px 11px;font-size:13px;cursor:pointer;line-height:1}
   button:hover,.file-button:hover{border-color:#98a2b3;background:#f8fafc}
@@ -66,7 +66,6 @@
   const axes = svg.querySelector('#axes_1');
   const status = document.getElementById('status');
   const lock = document.getElementById('geometryLocked');
-  axes.classList.toggle('locked',lock.checked);
   const MAX_LEADER_PX = 232;
   const labels = [...svg.querySelectorAll('.tech-label,.aux-label')];
   const techLabels = [...svg.querySelectorAll('.tech-label')];
@@ -112,7 +111,7 @@
       const owner = node.getAttribute?.('data-editor-owner');
       if (owner) return document.getElementById(owner);
       if (node.getAttribute?.('data-geometry-editable') === 'true') return node;
-      // Only explicitly registered geometry participates in layout history.
+      if (node !== axes && node.parentNode === axes) candidate = node;
       node = node.parentNode;
     }
     return candidate;
@@ -131,7 +130,7 @@
     editLabel.value = selected ? labelValue(selected) : '';
   }
   function selectableItems() {
-    return [...new Set([...labels, ...svg.querySelectorAll('[data-geometry-editable="true"]')])];
+    return [...new Set([...labels, ...svg.querySelectorAll('[data-geometry-editable="true"]')])].filter(n => !lock.checked || n.matches('.tech-label,.aux-label,[data-editor-role="legend-symbol"]'));
   }
   function setSelection(items) {
     selectedItems = [...new Set(items)].filter(Boolean);
@@ -190,10 +189,6 @@
     };
   }
   function applyState(state) {
-    if (!state || typeof state !== 'object') throw new Error('Invalid layout');
-    for (const v of Object.values(state.labels || {})) {
-      if (!v || !Number.isFinite(Number(v.x)) || !Number.isFinite(Number(v.y))) throw new Error('Invalid coordinates');
-    }
     labels.forEach((n,i) => {
       const v = state.labels?.[n.dataset.name || `aux-${i}`];
       if(v){
@@ -217,8 +212,8 @@
   function beginDrag(e) {
     if (e.button !== undefined && e.button !== 0) return;
     const label = labelFromTarget(e.target);
-    const candidate = !label ? geometryFromTarget(e.target) : null;
-    const geometry = candidate && (!lock.checked || candidate.dataset.editorRole === 'legend-symbol') ? candidate : null;
+    const geometryCandidate = !label ? geometryFromTarget(e.target) : null;
+    const geometry = geometryCandidate && (!lock.checked || geometryCandidate.dataset.editorRole === 'legend-symbol') ? geometryCandidate : null;
     const item = label || geometry;
     const client = {x:e.clientX,y:e.clientY};
     if (!item) {
@@ -237,7 +232,7 @@
     if (label) beginTextEdit(label);
   });
   function moveDrag(e) {
-    if (marquee) { marquee.current={x:e.clientX,y:e.clientY}; const r=clientRectFromPoints(marquee.start,marquee.current); const a=svgPoint({clientX:r.left,clientY:r.top}), b=svgPoint({clientX:r.right,clientY:r.bottom}); selectionRect.setAttribute('x',Math.min(a.x,b.x)); selectionRect.setAttribute('y',Math.min(a.y,b.y)); selectionRect.setAttribute('width',Math.abs(b.x-a.x)); selectionRect.setAttribute('height',Math.abs(b.y-a.y)); if(Math.abs(r.right-r.left)+Math.abs(r.bottom-r.top)>4) setSelection(selectableItems().filter(item=>(!lock.checked || item.matches('.tech-label,.aux-label,[data-editor-role="legend-symbol"]')) && boxIntersects(itemBox(item),r))); return; }
+    if (marquee) { marquee.current={x:e.clientX,y:e.clientY}; const r=clientRectFromPoints(marquee.start,marquee.current); const a=svgPoint({clientX:r.left,clientY:r.top}), b=svgPoint({clientX:r.right,clientY:r.bottom}); selectionRect.setAttribute('x',Math.min(a.x,b.x)); selectionRect.setAttribute('y',Math.min(a.y,b.y)); selectionRect.setAttribute('width',Math.abs(b.x-a.x)); selectionRect.setAttribute('height',Math.abs(b.y-a.y)); if(Math.abs(r.right-r.left)+Math.abs(r.bottom-r.top)>4) setSelection(selectableItems().filter(item=>boxIntersects(itemBox(item),r))); return; }
     if(!active) return; const p=svgPoint(e), dx=p.x-start.p.x, dy=p.y-start.p.y;
     start.items.forEach(info=>{const node=info.node;if(node.matches('.tech-label,.aux-label')){node.setAttribute('x',Number(info.x)+dx);node.setAttribute('y',Number(info.y)+dy);syncLabelLines(node);updateLeader(node);}else{node.setAttribute('transform',`${info.transform} translate(${dx} ${dy})`);}});
     status.textContent=selectedItems.length>1?'正在移动 '+selectedItems.length+' 个元素':'正在调整：'+(active.dataset.name||labelValue(active));
@@ -247,26 +242,23 @@
   document.addEventListener('pointerup', endDrag);
   document.addEventListener('pointercancel', endDrag);
   document.addEventListener('keydown',e=>{
-    if (e.target.closest?.('textarea,input,[contenteditable]')) return;
+    if(e.target.matches?.('textarea,input,[contenteditable="true"]')) return;
     if(!selected || !['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) return;
     e.preventDefault(); const old=snapshot(), step=e.shiftKey?5:1;
     const dx=e.key==='ArrowLeft'?-step:e.key==='ArrowRight'?step:0, dy=e.key==='ArrowUp'?-step:e.key==='ArrowDown'?step:0;
     selected.setAttribute('x',Number(selected.getAttribute('x'))+dx); selected.setAttribute('y',Number(selected.getAttribute('y'))+dy); syncLabelLines(selected); updateLeader(selected); pushHistory(old);
   });
-  lock.addEventListener('change',()=>{axes.classList.toggle('locked',lock.checked);if(lock.checked)setSelection(selectedItems.filter(n=>n.matches('.tech-label,.aux-label')));status.textContent=lock.checked?'曲线与点位已锁定':'警告：数据图层已解锁';});
+  lock.addEventListener('change',()=>{axes.classList.toggle('locked',lock.checked);status.textContent=lock.checked?'曲线与点位已锁定':'警告：数据图层已解锁';});
   document.getElementById('undoLayout').onclick=()=>{if(!undoStack.length)return;redoStack.push(snapshot());applyState(undoStack.pop());};
   document.getElementById('redoLayout').onclick=()=>{if(!redoStack.length)return;undoStack.push(snapshot());applyState(redoStack.pop());};
   document.getElementById('resetLayout').onclick=()=>{const old=snapshot();labels.forEach(n=>{n.setAttribute('x',n.dataset.originalX);n.setAttribute('y',n.dataset.originalY);if(n.dataset.originalText!==undefined)setLabelValue(n,n.dataset.originalText);});svg.querySelectorAll('[data-geometry-editable="true"]').forEach(n=>{const t=n.dataset.originalTransform;t?n.setAttribute('transform',t):n.removeAttribute('transform');});updateAllLeaders();if(selected)editLabel.value=labelValue(selected);pushHistory(old);status.textContent='已恢复初始布局 初始排版';};
-  document.getElementById('saveLayout').onclick=()=>download('hype-cycle-layout.json',new Blob([JSON.stringify(snapshot(),null,2)],{type:'application/json'}));
+  document.getElementById('saveLayout').onclick=()=>download('hc-comparison-layout.json',new Blob([JSON.stringify(snapshot(),null,2)],{type:'application/json'}));
   document.getElementById('loadLayout').onclick=()=>document.getElementById('layoutFile').click();
   document.getElementById('layoutFile').onchange=async e=>{try{const old=snapshot();applyState(JSON.parse(await e.target.files[0].text()));refreshLoadedLayout();pushHistory(old);status.textContent='位置文件已载入';}catch(err){status.textContent='位置文件无法读取';}e.target.value='';};
   function cleanSvg() {
     const clone=svg.cloneNode(true);
     clone.querySelectorAll('.selected').forEach(n=>n.classList.remove('selected'));
     clone.querySelectorAll('.editor-hit-path,#selectionRect').forEach(n=>n.remove());
-    clone.setAttribute('width',svg.viewBox.baseVal.width);
-    clone.setAttribute('height',svg.viewBox.baseVal.height);
-    clone.querySelectorAll('.dynamic-leader').forEach(n=>{n.setAttribute('fill','none');n.setAttribute('stroke','#98a2b3');n.setAttribute('stroke-width','0.42');});
     clone.removeAttribute('style');
     const defs=clone.querySelector('defs') || clone.insertBefore(document.createElementNS('http://www.w3.org/2000/svg','defs'),clone.firstChild);
     const style=document.createElementNS('http://www.w3.org/2000/svg','style');
@@ -275,10 +267,10 @@
     defs.appendChild(style);
     return clone;
   }
-  document.getElementById('exportSvg').onclick=()=>{const xml=new XMLSerializer().serializeToString(cleanSvg());download('hc-comparison-edited.svg',new Blob([xml],{type:'image/svg+xml'}));};
+  document.getElementById('exportSvg').onclick=()=>{const xml=new XMLSerializer().serializeToString(cleanSvg());download('hc-comparison.svg',new Blob([xml],{type:'image/svg+xml'}));};
   document.getElementById('exportPng').onclick=()=>{
     const clone=cleanSvg(), box=svg.viewBox.baseVal, xml=new XMLSerializer().serializeToString(clone), blob=new Blob([xml],{type:'image/svg+xml'}), url=URL.createObjectURL(blob), img=new Image();
-    img.onload=()=>{const canvas=document.createElement('canvas');canvas.width=2560;canvas.height=Math.round(2560*box.height/box.width);const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);URL.revokeObjectURL(url);canvas.toBlob(png=>download('hc-comparison-edited.png',png),'image/png');};img.src=url;
+    img.onload=()=>{const canvas=document.createElement('canvas');canvas.width=2560;canvas.height=1280;const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);URL.revokeObjectURL(url);canvas.toBlob(png=>download('hc-comparison.png',png),'image/png');};img.src=url;
   };
   labels.forEach(n => { n.dataset.originalText = labelValue(n); setLabelValue(n, n.dataset.originalText); });
   applyLabel.onclick = applyTextEdit;
@@ -286,6 +278,7 @@
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); applyTextEdit(); }
     if (e.key === 'Escape' && selected) editLabel.value = labelValue(selected);
   });
+  editLabel.addEventListener('blur', e => { if (selected && e.relatedTarget !== applyLabel) editLabel.value = labelValue(selected); });
   updateAllLeaders();
 })();
 </script>
